@@ -15,15 +15,29 @@ data Tetromino = Tetromino
     tetrominoBlocks   :: [Block]
   } deriving Show
 
+tetrominoBlockPositions :: Tetromino -> [Point]
+tetrominoBlockPositions tetromino =
+  [ blockPosition block `pTranslate` tetrominoPosition tetromino | block <- tetrominoBlocks tetromino]
+
+descendTetromino :: Tetromino -> Tetromino
+descendTetromino tetromino =
+  tetromino
+    {
+      tetrominoPosition = Point x (y + 1)
+    }
+  where
+    Point x y = tetrominoPosition tetromino
+
 rotateTetromino :: RotationDirection -> Tetromino -> Tetromino
 rotateTetromino rotationDirection tetromino =
   tetromino
     {
-      tetrominoBlocks = [block
-                  {
-                     blockPosition = rotate90 rotationDirection $ blockPosition block
-                  }
-                | block <- tetrominoBlocks tetromino]
+      tetrominoBlocks =
+        [block
+          {
+             blockPosition = rotate90 rotationDirection $ blockPosition block
+          }
+        | block <- tetrominoBlocks tetromino]
     }
 
 randomTetromino :: StdGen -> (StdGen, Tetromino)

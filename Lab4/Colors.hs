@@ -4,7 +4,6 @@ import Data.Bits
 import Data.Word (Word8)
 import Graphics.UI.SDL as SDL
 
--- TODO define as hex
 red, green, blue, black, white, yellow, cyan, brown, orange :: SDL.Pixel
 red = SDL.Pixel 0xFF0000
 green = SDL.Pixel 0x00FF00

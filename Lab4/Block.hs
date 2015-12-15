@@ -10,3 +10,6 @@ data Block = Block
     blockPosition :: Point,
     blockColor    :: Pixel
   } deriving Show
+
+instance Eq Block where
+  block1 == block2 = blockPosition block1 == blockPosition block2

@@ -57,3 +57,15 @@ colorDepth = 24
 -- Target is 60 fps. Hence there is approx 1000 / 60
 targetTimePerFrameMS :: Int
 targetTimePerFrameMS = 1000 `div` 60
+
+initialGameSpeed :: Int
+initialGameSpeed = 0
+
+speedIncreaseFactor :: Int
+speedIncreaseFactor = 5
+
+speedIncreaseAfterNumberClearedRows :: Int
+speedIncreaseAfterNumberClearedRows = 5
+
+baseFramesPerDescend :: Int
+baseFramesPerDescend = 30
