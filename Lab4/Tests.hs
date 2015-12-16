@@ -34,14 +34,14 @@ instance Arbitrary SteerDirection where
 
 prop_Steer point@(Point x y) direction =
   case direction of
-    SteerLeft -> point `pTranslate` (steerVector direction) == Point (x-1) y
-    SteerRight -> point `pTranslate` (steerVector direction) == Point (x+1) y
+    SteerLeft -> point `pTranslate` steerVector direction == Point (x-1) y
+    SteerRight -> point `pTranslate` steerVector direction == Point (x+1) y
 
 instance Arbitrary Block where
   arbitrary =
     do
       pos <- arbitrary
-      return $ Block { blockPosition = pos, blockColor = red}
+      return Block { blockPosition = pos, blockColor = red}
 
 instance Arbitrary Tetromino where
   arbitrary =
@@ -106,7 +106,7 @@ instance Arbitrary Well where
       current <- suchThat arbitrary
         (\tetromino ->
           not
-            (any (\pos -> (pos `elem` (map blockPosition solids)))
+            (any (\pos -> pos `elem` map blockPosition solids)
             $ tetrominoBlockPositions tetromino))
       return
         Well
@@ -118,7 +118,7 @@ instance Arbitrary Well where
          }
 
 prop_WellSolidBlockPositions well =
-  wellSolidBlockPositions well == (map blockPosition $ wellSolidBlocks well)
+  wellSolidBlockPositions well == map blockPosition (wellSolidBlocks well)
 
 prop_SolidifyCurrentTetromino well =
     solidifyCurrentTetromino well == solidifiedWell

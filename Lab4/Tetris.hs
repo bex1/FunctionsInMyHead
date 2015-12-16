@@ -7,7 +7,7 @@ import Tetromino
 import Util
 import Well
 
-import Control.Monad (when, void, sequence_)
+import Control.Monad (when, void)
 import qualified Graphics.UI.SDL     as SDL
 import qualified Graphics.UI.SDL.TTF as TTF
 import System.Random
@@ -258,22 +258,21 @@ renderWell :: Well -> SDL.Surface -> IO ()
 renderWell well surface =
   do
     renderTetromino (wellCurrentTetromino well) surface
-    (sequence_ . map (\block -> renderBlock block surface) . wellSolidBlocks) well
+    (mapM_ (`renderBlock` surface) . wellSolidBlocks) well
 
 -- Renders a tetromino on the specified SDL surface.
 renderTetromino :: Tetromino -> SDL.Surface -> IO ()
 renderTetromino tetromino surface =
-  sequence_ $
-    map
-      (\block ->
-        renderBlock
-          (block
-            {
-              blockPosition = blockPosition block `pTranslate` tetrominoPosition tetromino
-            }
-          )
-          surface)
-      $ tetrominoBlocks tetromino
+  mapM_
+    (\block ->
+      renderBlock
+        (block
+          {
+            blockPosition = blockPosition block `pTranslate` tetrominoPosition tetromino
+          }
+        )
+        surface)
+    $ tetrominoBlocks tetromino
 
 -- Renders a block on the specified Surface.
 renderBlock :: Block -> SDL.Surface -> IO ()

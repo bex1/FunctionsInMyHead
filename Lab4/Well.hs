@@ -8,6 +8,7 @@ import Util
 
 import Data.List ( sort )
 import qualified Data.Map as Map
+import Data.Maybe
 import Graphics.UI.SDL (Pixel)
 import qualified Graphics.UI.SDL as SDL
 import System.Random
@@ -173,9 +174,7 @@ isOutsideWell (Point x y) well =
 -- Steers the current tetromino, if possible, to the left or right.
 steerCurrentTetromino :: Well -> SteerDirection -> Well
 steerCurrentTetromino well direction =
-  case trySteerCurrentTetromino well direction of
-    Just well' -> well'
-    Nothing -> well
+  fromMaybe well (trySteerCurrentTetromino well direction)
 
 -- Try to steer the tetromino left or right.
 trySteerCurrentTetromino :: Well -> SteerDirection -> Maybe Well
@@ -199,9 +198,7 @@ trySteerCurrentTetromino well direction =
 -- Rotates the current tetromino, if possible, clockwise or counterclockwise.
 rotateCurrentTetromino :: Well -> RotationDirection -> Well
 rotateCurrentTetromino well direction =
-  case tryRotateCurrentTetromino well direction of
-    Just well' -> well'
-    Nothing -> well
+  fromMaybe well (tryRotateCurrentTetromino well direction)
 
     -- Try to rotate the tetromino clockwise or counterclockwise.
 tryRotateCurrentTetromino :: Well -> RotationDirection -> Maybe Well
