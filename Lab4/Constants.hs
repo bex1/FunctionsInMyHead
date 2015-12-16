@@ -45,12 +45,15 @@ wellPosition =
     (windowWidth  `div` 2 - wellWidthPixels  `div` 2)
     (windowHeight `div` 2 - wellHeightPixels `div` 2)
 
+-- The ppsition of the preview surface.
 previewPosition :: Point
 previewPosition = wellPosition `pTranslate` Point (wellWidthPixels + blockSide) 0
 
+-- The position of the score.
 scorePosition :: Point
 scorePosition = wellPosition `pTranslate` Point 0 (-2 * blockSide)
 
+-- The color depth used.
 colorDepth :: Int
 colorDepth = 24
 
@@ -58,14 +61,26 @@ colorDepth = 24
 targetTimePerFrameMS :: Int
 targetTimePerFrameMS = 1000 `div` 60
 
+-- Initial speed of the game.
 initialGameSpeed :: Int
 initialGameSpeed = 0
 
+-- Factor to remove from baseFramesPerDescend upon speed increase.
 speedIncreaseFactor :: Int
 speedIncreaseFactor = 5
 
+-- Speed increase after x number of cleared rows.
 speedIncreaseAfterNumberClearedRows :: Int
 speedIncreaseAfterNumberClearedRows = 5
 
+-- Descend tetromino every x frames.
 baseFramesPerDescend :: Int
 baseFramesPerDescend = 30
+
+-- Tetromino startposition in the Well.
+wellTetrominoStartPosition :: Point
+wellTetrominoStartPosition = Point 5 1
+
+-- The postion of the tetromino in the preview grid.
+previewTetrominoPosition :: Point
+previewTetrominoPosition = Point 2 3

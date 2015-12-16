@@ -8,6 +8,7 @@ import Graphics.UI.SDL (Pixel)
 import qualified Graphics.UI.SDL as SDL
 import System.Random
 
+-- Piece of a tetris game.
 data Tetromino = Tetromino
   {
     -- Position is relative to the containing Well.
@@ -15,10 +16,12 @@ data Tetromino = Tetromino
     tetrominoBlocks   :: [Block]
   } deriving Show
 
+-- Fetches the points of the blocks in a tetromino relative to the Well.
 tetrominoBlockPositions :: Tetromino -> [Point]
 tetrominoBlockPositions tetromino =
   [ blockPosition block `pTranslate` tetrominoPosition tetromino | block <- tetrominoBlocks tetromino]
 
+-- Descends a tetromino one level in the well.
 descendTetromino :: Tetromino -> Tetromino
 descendTetromino tetromino =
   tetromino
@@ -28,6 +31,7 @@ descendTetromino tetromino =
   where
     Point x y = tetrominoPosition tetromino
 
+-- Rotates the tetromino in the specified rotation direction.
 rotateTetromino :: RotationDirection -> Tetromino -> Tetromino
 rotateTetromino rotationDirection tetromino =
   tetromino
@@ -40,6 +44,7 @@ rotateTetromino rotationDirection tetromino =
         | block <- tetrominoBlocks tetromino]
     }
 
+-- Fetches a random tetromino.
 randomTetromino :: StdGen -> (StdGen, Tetromino)
 randomTetromino randomGenerator = (randomGenerator', tetrominos !! i)
   where
@@ -56,11 +61,11 @@ randomTetromino randomGenerator = (randomGenerator', tetrominos !! i)
               blockPositions,
             tetrominoPosition = Point 0 0
           })
-        [(red, [(0, 1), (1, 1), (2, 1), (3, 1)]),
-         (green, [(0, 0), (1, 0), (2, 0), (2, 1)]),
-         (blue, [(0, 0), (1, 0), (2, 0), (0, 1)]),
-         (yellow, [(0, 0), (1, 0), (0, 1), (1, 1)]),
-         (cyan, [(1, 0), (2, 0), (0, 1), (1, 1)]),
-         (brown, [(0, 0), (1, 0), (2, 0), (1, 1)]),
-         (orange, [(0, 0), (1, 0), (1, 1), (2, 1)])]
+        [(red, [(-2, -1), (-1, -1), (0, -1), (1, -1)]),
+         (green, [(-2, -1), (-1, -1), (0, -1), (0, 0)]),
+         (blue, [(-1, -1), (0, -1), (1, -1), (-1, 0)]),
+         (yellow, [(-1, -1), (0, -1), (-1, 0), (0, 0)]),
+         (cyan, [(0, -1), (1, -1), (-1, 0), (0, 0)]),
+         (brown, [(-1, -1), (0, -1), (1, -1), (0, 0)]),
+         (orange, [(-1, -1), (0, -1), (0, 0), (1, 0)])]
     (i, randomGenerator') = randomR (0, length tetrominos - 1) randomGenerator

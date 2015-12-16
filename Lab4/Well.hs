@@ -12,6 +12,7 @@ import Graphics.UI.SDL (Pixel)
 import qualified Graphics.UI.SDL as SDL
 import System.Random
 
+-- The well is the playfield in Tetris.
 data Well = Well {
   wellCurrentTetromino  :: Tetromino,
   wellNextTetromino     :: Tetromino,
@@ -19,9 +20,11 @@ data Well = Well {
   wellFull              :: Bool
 } deriving Show
 
+-- Retrives the positions of the solid blocks of the Well.
 wellSolidBlockPositions :: Well -> [Point]
 wellSolidBlockPositions = map blockPosition . wellSolidBlocks
 
+-- Turns a tetromino into solid blocks of the well.
 solidifyCurrentTetromino :: Well -> Well
 solidifyCurrentTetromino well =
   well
@@ -36,6 +39,8 @@ solidifyCurrentTetromino well =
         ] ++ wellSolidBlocks well
     }
 
+-- Changes the current tetromino into the preview tetromino and
+-- picks a random tetromino as the next preview.
 newCurrentTetromino :: StdGen -> Well -> (StdGen, Well)
 newCurrentTetromino randomGenerator well =
   (randomGenerator',
@@ -47,10 +52,14 @@ newCurrentTetromino randomGenerator well =
   )
   where
     (randomGenerator', newTetromino') = randomTetromino randomGenerator
-    newTetromino = newTetromino' { tetrominoPosition = Point 2 2 }
+    newTetromino = newTetromino' { tetrominoPosition = previewTetrominoPosition }
     nextTetromino' = wellNextTetromino well
-    nextTetromino = nextTetromino' { tetrominoPosition = tetrominoPosition nextTetromino' `pTranslate` Point 4 0 }
+    nextTetromino = nextTetromino' { tetrominoPosition = wellTetrominoStartPosition }
 
+-- Descends the current teromino and returns the number of cleared rows
+-- and the updated well.
+-- If the tetromino collides the current tetromino is switched and
+-- if that one also collide we lose.
 performDescend :: Well -> StdGen -> (StdGen, (Int, Well))
 performDescend well randomGenerator =
   if descendedTetromino `tetrominoCollidesWithWell` well then
@@ -87,6 +96,8 @@ performDescend well randomGenerator =
     -- The new current tetromino in the well cleared of full rows.
     newTetromino = wellCurrentTetromino newTetrominoWell
 
+-- Removes the full rows of the well and moves rows above down.
+-- Returns the number of rows removed and the updated well.
 clearFullRows :: Well -> (Int, Well)
 clearFullRows  well =
   (numberFullRows,
@@ -94,28 +105,28 @@ clearFullRows  well =
    -- remove it
    -- and move rows above down one level
    foldl
-     (\well y ->
+     (\well row ->
        well
          {
            wellSolidBlocks =                           -- move rows above down
              map                                       -- on level
                (\block ->
-                 if blockRow block < y then
+                 if blockRow block < row then
                    moveDown block
                  else
                    block
                )
-             $ filter (\block -> blockRow block /= y)  -- remove the full row
+             $ filter (\block -> blockRow block /= row)  -- remove the full row
              $ wellSolidBlocks well
          }
      )
      well
-     fullRows
+     fullRowNumbers
   )
   where
     -- function that returns the rownumber of a block
     blockRow :: Block -> Int
-    blockRow block = let Point _ y = blockPosition block in y
+    blockRow block = let Point _ row = blockPosition block in row
 
     -- function that moves a block down one level
     moveDown :: Block -> Block
@@ -129,19 +140,21 @@ clearFullRows  well =
     -- that row.
     rowCountsMap =
       foldl
-        (\rowCountsMap' (Point _ y) -> Map.insertWith (\_ count -> count + 1) y 1 rowCountsMap')
+        (\rowCountsMap' (Point _ row) -> Map.insertWith (\_ count -> count + 1) row 1 rowCountsMap')
         Map.empty
         $ wellSolidBlockPositions well
 
     -- Calculate the full rows, i.e. a list of the full rownumbers.
     -- Also get the number of full rows.
-    (numberFullRows, fullRows) =
-      let fullRows' = sort
+    (numberFullRows, fullRowNumbers) =
+      let fullRowNumbers' = sort
               $ map fst
               $ filter (\(_, count) -> count == wellWidth)
               $ Map.toList rowCountsMap
-      in (length fullRows', fullRows')
+      in (length fullRowNumbers', fullRowNumbers')
 
+-- Checks if a tetromino is outside the well dimensions or collides with a solid
+-- block.
 tetrominoCollidesWithWell :: Tetromino -> Well -> Bool
 tetrominoCollidesWithWell tetromino well =
   any (`pointCollidesWithWell` well) $ tetrominoBlockPositions tetromino
@@ -152,16 +165,19 @@ pointCollidesWithWell :: Point -> Well-> Bool
 pointCollidesWithWell point well =
   point `elem` wellSolidBlockPositions well || point `isOutsideWell` well
 
+-- Checks if a point is outside the well dimensions
 isOutsideWell :: Point -> Well -> Bool
 isOutsideWell (Point x y) well =
   x < 0 || y < 0 || x >= wellWidth || y >= wellHeight
 
+-- Steers the current tetromino, if possible, to the left or right.
 steerCurrentTetromino :: Well -> SteerDirection -> Well
 steerCurrentTetromino well direction =
   case trySteerCurrentTetromino well direction of
     Just well' -> well'
     Nothing -> well
 
+-- Try to steer the tetromino left or right.
 trySteerCurrentTetromino :: Well -> SteerDirection -> Maybe Well
 trySteerCurrentTetromino well direction =
   if movedTetromino `tetrominoCollidesWithWell` well then
@@ -180,12 +196,14 @@ trySteerCurrentTetromino well direction =
           tetrominoPosition = tetrominoPosition currentTetromino `pTranslate` steerVector direction
         }
 
+-- Rotates the current tetromino, if possible, clockwise or counterclockwise.
 rotateCurrentTetromino :: Well -> RotationDirection -> Well
 rotateCurrentTetromino well direction =
   case tryRotateCurrentTetromino well direction of
     Just well' -> well'
     Nothing -> well
 
+    -- Try to rotate the tetromino clockwise or counterclockwise.
 tryRotateCurrentTetromino :: Well -> RotationDirection -> Maybe Well
 tryRotateCurrentTetromino well direction =
   if rotatedTetromino `tetrominoCollidesWithWell` well then

@@ -14,6 +14,7 @@ import System.Random
 
 import Debug.Trace
 
+-- NES style Tetris.
 data Tetris = Tetris
   {
     tetrisWell            :: Well,
@@ -27,7 +28,8 @@ data Tetris = Tetris
     tetrisFont            :: TTF.Font
   } deriving Show
 
-createTetris    :: Int        -- Initial speed.
+-- Create a tetris game.
+createTetris   :: Int         -- Initial speed.
                -> SDL.Surface -- Well surface.
                -> SDL.Surface -- Preview surface.
                -> TTF.Font    -- Font to use.
@@ -53,9 +55,18 @@ createTetris speed wellSurface previewSurface font randomGenerator =
       tetrisFont = font
     }
   where
-    (randomGenerator', firstTetromino)   = randomTetromino randomGenerator
-    (randomGenerator'', secondTetromino) = randomTetromino randomGenerator'
+    (randomGenerator', firstTetromino')   = randomTetromino randomGenerator
+    firstTetromino = firstTetromino'
+      {
+        tetrominoPosition = wellTetrominoStartPosition
+      }
+    (randomGenerator'', secondTetromino') = randomTetromino randomGenerator'
+    secondTetromino = secondTetromino'
+      {
+        tetrominoPosition = previewTetrominoPosition
+      }
 
+-- The loop of the game.
 gameLoop :: Tetris -> IO Tetris
 gameLoop tetris =
   do
@@ -70,14 +81,16 @@ gameLoop tetris =
         let ellapsedTime = afterTime - beforeTime
         -- TODO since sleeping takes atleast 15 ms this has to be tewaked
         -- Probaåly is not worth sleeping when ellapsedTime close to targetTimePerFrameMS
-        when (ellapsedTime < targetTimePerFrameMS) $ SDL.delay $ fromIntegral (targetTimePerFrameMS - ellapsedTime)
+        when (ellapsedTime < (targetTimePerFrameMS - 5)) $ SDL.delay $ fromIntegral (targetTimePerFrameMS - ellapsedTime)
         gameLoop tetris'
     else
       putStrLn "Game over" >> return tetris'
 
+-- Indicates if the game is over. I.e the Well is full.
 gameOver :: Tetris -> Bool
 gameOver tetris = wellFull $ tetrisWell tetris
 
+-- Ends the game.
 endGame :: Tetris -> Tetris
 endGame tetris =
   tetris
@@ -115,6 +128,7 @@ updateTetris tetris
           tetrisRandomGenerator = randomGenerator
         }
 
+-- Increases the framecount.
 tetrisNextFrame :: Tetris -> Tetris
 tetrisNextFrame tetris =
   tetris
@@ -122,6 +136,7 @@ tetrisNextFrame tetris =
       tetrisFrameNumber = tetrisFrameNumber tetris + 1
     }
 
+-- Updates the score of tetris.
 updateScore :: Int -> Tetris -> Tetris
 updateScore rowsCleared tetris =
   tetris
@@ -130,6 +145,7 @@ updateScore rowsCleared tetris =
       tetrisRowsCleared = tetrisRowsCleared tetris + rowsCleared
     }
 
+-- Steers the current piece left or right.
 steerPiece :: Tetris -> SteerDirection -> Tetris
 steerPiece tetris direction =
   tetris
@@ -137,6 +153,7 @@ steerPiece tetris direction =
       tetrisWell = steerCurrentTetromino (tetrisWell tetris) direction
     }
 
+-- Rotates the current piece clockwise or counterclockwise.
 rotatePiece :: Tetris -> RotationDirection -> Tetris
 rotatePiece tetris direction =
   tetris
@@ -144,9 +161,11 @@ rotatePiece tetris direction =
       tetrisWell = rotateCurrentTetromino (tetrisWell tetris) direction
     }
 
+-- Lets the current piece fall until collision.
+-- Then updates the score.
 letPieceFall :: Tetris -> Tetris
 letPieceFall tetris =
-  if fellSafely then
+  if descendedSafely then
     letPieceFall
       ((updateScore rowsCleared tetris)
          {
@@ -160,12 +179,13 @@ letPieceFall tetris =
       }
   where
     well = tetrisWell tetris
-    fellSafely =
+    descendedSafely =
       ((tetrominoPosition . wellCurrentTetromino) well `pTranslate` Point 0 1)
         == (tetrominoPosition . wellCurrentTetromino) well'
     (randomGenerator', (rowsCleared, well')) = performDescend well randomGenerator
     randomGenerator = tetrisRandomGenerator tetris
 
+-- Polls SDL events until no events remain and handles them.
 handleEvents :: Tetris -> IO Tetris
 handleEvents tetris =
   do
@@ -175,10 +195,11 @@ handleEvents tetris =
     else
       handleEvents $ handleEvent tetris event
 
+-- Handle a SDL event. Such as keypress etc.
 handleEvent :: Tetris -> SDL.Event -> Tetris
 handleEvent tetris SDL.NoEvent        = tetris
 handleEvent tetris SDL.Quit           = endGame tetris
-handleEvent tetris (SDL.KeyUp keysym) =
+handleEvent tetris (SDL.KeyDown keysym) =
   case SDL.symKey keysym of
     SDL.SDLK_LEFT   -> steerPiece tetris SteerLeft
     SDL.SDLK_RIGHT  -> steerPiece tetris SteerRight
@@ -196,6 +217,7 @@ handleEvent tetris (SDL.KeyUp keysym) =
     _               -> tetris
 handleEvent tetris _ = tetris
 
+-- Renders the game.
 renderTetris :: Tetris -> IO ()
 renderTetris tetris =
   do
@@ -218,28 +240,31 @@ renderTetris tetris =
 
     -- copy surfaces to window surface
     let Point wellX wellY = wellPosition
-    blitWellSurface <- SDL.blitSurface (tetrisWellSurface tetris) Nothing windowSurface $ Just $ SDL.Rect wellX wellY 0 0
+    SDL.blitSurface (tetrisWellSurface tetris) Nothing windowSurface $ Just $ SDL.Rect wellX wellY 0 0
 
     let Point previewX previewY = previewPosition
-    blitPreviewSurface <- SDL.blitSurface (tetrisPreviewSurface tetris) Nothing windowSurface $ Just $ SDL.Rect previewX previewY 0 0
+    SDL.blitSurface (tetrisPreviewSurface tetris) Nothing windowSurface $ Just $ SDL.Rect previewX previewY 0 0
 
     let Point scoreX scoreY = scorePosition
-    blitScoreSurface <- SDL.blitSurface scoreSurface Nothing windowSurface $ Just $ SDL.Rect scoreX scoreY 0 0
-    blitRowsClearedSurface <- SDL.blitSurface rowsClearedSurface Nothing windowSurface $ Just $ SDL.Rect scoreX (scoreY + 20) 0 0
+    SDL.blitSurface scoreSurface Nothing windowSurface $ Just $ SDL.Rect scoreX scoreY 0 0
+    SDL.blitSurface rowsClearedSurface Nothing windowSurface $ Just $ SDL.Rect scoreX (scoreY + 20) 0 0
 
     -- flip the windowsurface to display it
     void $ SDL.flip windowSurface
 
+-- Renders the Well. I.e. the playfield on a specified Surface.
 renderWell :: Well -> SDL.Surface -> IO ()
 renderWell well surface =
   do
     renderTetromino (wellCurrentTetromino well) surface
     (sequence_ . map (\block -> renderBlock block surface) . wellSolidBlocks) well
 
+-- Renders a tetromino on the specified SDL surface.
 renderTetromino :: Tetromino -> SDL.Surface -> IO ()
 renderTetromino tetromino surface =
   sequence_ $ map (\block -> renderBlock (block { blockPosition = blockPosition block `pTranslate` tetrominoPosition tetromino }) surface) $ tetrominoBlocks tetromino
 
+-- Renders a block on the specified Surface.
 renderBlock :: Block -> SDL.Surface -> IO ()
 renderBlock block surface = void $ SDL.fillRect surface (Just $ SDL.Rect x y blockSide blockSide) (blockColor block)
   where
