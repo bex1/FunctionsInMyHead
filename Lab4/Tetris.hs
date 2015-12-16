@@ -105,8 +105,9 @@ endGame tetris =
 -- Called on every frame to update the game state.
 updateTetris :: Tetris -> Tetris
 updateTetris tetris
+  -- Descend intially every 30 ms or so. Speeding up as rows are cleared.
   | tetrisFrameNumber frameUpdatedTetris `mod` (baseFramesPerDescend - tetrisSpeed frameUpdatedTetris) == 0 = tetrominoDescendedTetris
-  | otherwise = trace (show $ tetrisFrameNumber frameUpdatedTetris) frameUpdatedTetris -- Only update frame counter
+  | otherwise = frameUpdatedTetris -- Only update frame counter
   where
     -- Update frame counter.
     frameUpdatedTetris = tetrisNextFrame tetris
@@ -262,7 +263,17 @@ renderWell well surface =
 -- Renders a tetromino on the specified SDL surface.
 renderTetromino :: Tetromino -> SDL.Surface -> IO ()
 renderTetromino tetromino surface =
-  sequence_ $ map (\block -> renderBlock (block { blockPosition = blockPosition block `pTranslate` tetrominoPosition tetromino }) surface) $ tetrominoBlocks tetromino
+  sequence_ $
+    map
+      (\block ->
+        renderBlock
+          (block
+            {
+              blockPosition = blockPosition block `pTranslate` tetrominoPosition tetromino
+            }
+          )
+          surface)
+      $ tetrominoBlocks tetromino
 
 -- Renders a block on the specified Surface.
 renderBlock :: Block -> SDL.Surface -> IO ()
