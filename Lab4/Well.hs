@@ -18,7 +18,7 @@ data Well = Well {
   wellNextTetromino     :: Tetromino,
   wellSolidBlocks       :: [Block],
   wellFull              :: Bool
-} deriving Show
+} deriving (Show, Eq)
 
 -- Retrives the positions of the solid blocks of the Well.
 wellSolidBlockPositions :: Well -> [Point]

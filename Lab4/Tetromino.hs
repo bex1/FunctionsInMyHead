@@ -14,7 +14,7 @@ data Tetromino = Tetromino
     -- Position is relative to the containing Well.
     tetrominoPosition :: Point,
     tetrominoBlocks   :: [Block]
-  } deriving Show
+  } deriving (Show, Eq)
 
 -- Fetches the points of the blocks in a tetromino relative to the Well.
 tetrominoBlockPositions :: Tetromino -> [Point]
